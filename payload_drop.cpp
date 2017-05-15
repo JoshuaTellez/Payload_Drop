@@ -109,6 +109,9 @@ top (int argc, char **argv)
             }
         }
     }
+    else{
+        printf("ERROR: Could not open config file\n");
+    }
 
     // --------------------------------------------------------------------------
     //   PARSE THE COMMANDS -- TODO
