@@ -103,7 +103,6 @@ top (int argc, char **argv)
                 case 11: //Name of port pixhawk connects to
                 {
                     port = line;
-                    printf("Port: %s\n", port);
                     break;
                 }
             }
