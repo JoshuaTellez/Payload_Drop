@@ -322,7 +322,8 @@ set(SOURCE_FILES
         Mavlink/mavlink_types.h
         Mavlink/message.hpp
         Mavlink/msgmap.hpp
-        Mavlink/protocol.h serial_port.h serial_port.cpp payload_drop.cpp mavlink_interface.h mavlink_interface.cpp payload_drop.h UAV_Database.cpp UAV_Database.h)
+        Mavlink/protocol.h
+        serial_port.h serial_port.cpp payload_drop.cpp mavlink_interface.h mavlink_interface.cpp payload_drop.h UAV_Database.cpp UAV_Database.h)
 
 add_executable(Payload_Drop ${SOURCE_FILES}
         serial_port.h serial_port.cpp

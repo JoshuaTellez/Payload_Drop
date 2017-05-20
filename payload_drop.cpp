@@ -190,7 +190,6 @@ top (int argc, char **argv)
     mavlink_interface.start();
 
 
-
     /*
      * Polling target location --
      */
@@ -199,25 +198,40 @@ top (int argc, char **argv)
         UAV_DatabaseConnect("plane1", "root", "ngcp"); //Connect to the database
         double target[3]; //target: {alt, lat, long}
         int startMission = UAV_CheckMissionStatus();
-        while (!startMission) {
+        while (startMission != 1) {
+            printf("Waiting for mission to start\n");
             //Updating our GPS location
-            UAV_InsertGPS_LOCAL(mavlink_interface.current_messages.global_position_int.relative_alt / 1E3,
+            UAV_InsertGPS_LOCAL(mavlink_interface.current_messages.global_position_int.alt / 1E3,
                                 mavlink_interface.current_messages.global_position_int.lat / 1E7,
                                 mavlink_interface.current_messages.global_position_int.lon / 1E7);
+            startMission = UAV_CheckMissionStatus();
+            usleep(1000000); //check and update once a second
+        }
+        printf("Starting Mission!!!!!!\n");
+
+        bool recievedTarget = false;
+
+        while (!recievedTarget){ //While we have not recieved target
+
             //Checking if database has target
             UAV_PullTARGET_LOCAL(target);
-            startMission = UAV_CheckMissionStatus();
             usleep(500000); //check and update 2 times a second
+            if(target[1] < 50 && target[1] > 0){ //If we have a 'reasonable' lat
+                recievedTarget = true;
+            }
         }
-
 
         target_lat = target[1];
         target_long = target[2];
+
+        printf("Target Recieved!!!!!\n");
+        printf("Target Lat: %f, Target Long: %f\n", target_lat, target_long);
+
     }
 
     double plane_lat = mavlink_interface.current_messages.global_position_int.lat / 1E7,
             plane_long = mavlink_interface.current_messages.global_position_int.lon / 1E7,
-            plane_alt = mavlink_interface.current_messages.global_position_int.relative_alt / 1E3;
+            plane_alt = mavlink_interface.current_messages.global_position_int.alt / 1E3;
 
 
     /*
@@ -268,14 +282,17 @@ top (int argc, char **argv)
     while (!at_first_wp) {
         usleep(200000); //check and update gps 5 times a second
         //Updating our GPS location
-        UAV_InsertGPS_LOCAL(mavlink_interface.current_messages.global_position_int.relative_alt / 1E3,
-                            mavlink_interface.current_messages.global_position_int.lat / 1E7,
-                            mavlink_interface.current_messages.global_position_int.lon / 1E7);
+        if(database) {
+            UAV_InsertGPS_LOCAL(mavlink_interface.current_messages.global_position_int.alt / 1E3,
+                                mavlink_interface.current_messages.global_position_int.lat / 1E7,
+                                mavlink_interface.current_messages.global_position_int.lon / 1E7);
+        }
 
         double distance = payload_drop.gpsDistance(payload_waypoints[0].lat, payload_waypoints[0].lon, //While we are not at first_wp
                                    mavlink_interface.current_messages.global_position_int.lat / 1E7,
                                    mavlink_interface.current_messages.global_position_int.lon / 1E7);
         printf("Distance to first wp: %f\n",distance);
+
 
         if(distance < wp_radius){
             at_first_wp = true;
@@ -293,9 +310,11 @@ top (int argc, char **argv)
 
         usleep(100000); //check and update gps 10 times a second
         //Updating our GPS location
-        UAV_InsertGPS_LOCAL(mavlink_interface.current_messages.global_position_int.relative_alt / 1E3,
-                            mavlink_interface.current_messages.global_position_int.lat / 1E7,
-                            mavlink_interface.current_messages.global_position_int.lon / 1E7);
+        if(database){
+            UAV_InsertGPS_LOCAL(mavlink_interface.current_messages.global_position_int.alt / 1E3,
+                                mavlink_interface.current_messages.global_position_int.lat / 1E7,
+                                mavlink_interface.current_messages.global_position_int.lon / 1E7);
+        }
 
         double distance = payload_drop.gpsDistance(payload_drop.TLat, payload_drop.TLong, //While we are not at first_wp
                                                    mavlink_interface.current_messages.global_position_int.lat / 1E7,
@@ -309,13 +328,14 @@ top (int argc, char **argv)
     }
 
     printf("Dropped Payload!!!!!\n");
-
-    while(true){
-        usleep(500000); //check and update gps 2 times a second
-        //Updating our GPS location
-        UAV_InsertGPS_LOCAL(mavlink_interface.current_messages.global_position_int.relative_alt / 1E3,
-                            mavlink_interface.current_messages.global_position_int.lat / 1E7,
-                            mavlink_interface.current_messages.global_position_int.lon / 1E7);
+    if(database){
+        while(true){
+            usleep(500000); //check and update gps 2 times a second
+            //Updating our GPS location
+            UAV_InsertGPS_LOCAL(mavlink_interface.current_messages.global_position_int.alt / 1E3,
+                                mavlink_interface.current_messages.global_position_int.lat / 1E7,
+                                mavlink_interface.current_messages.global_position_int.lon / 1E7);
+        }
     }
 
 
