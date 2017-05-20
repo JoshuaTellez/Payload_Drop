@@ -198,17 +198,15 @@ top (int argc, char **argv)
     if(database) { //If database is on
         UAV_DatabaseConnect("plane1", "root", "ngcp"); //Connect to the database
         double target[3]; //target: {alt, lat, long}
-        bool recieved_target = false;
-        while (!recieved_target) {
+        int startMission = UAV_CheckMissionStatus();
+        while (!startMission) {
             //Updating our GPS location
             UAV_InsertGPS_LOCAL(mavlink_interface.current_messages.global_position_int.relative_alt / 1E3,
                                 mavlink_interface.current_messages.global_position_int.lat / 1E7,
                                 mavlink_interface.current_messages.global_position_int.lon / 1E7);
             //Checking if database has target
             UAV_PullTARGET_LOCAL(target);
-            if ((target[0] < 1000 && target[0] > 0) && (target[1] > 30 && target[1] < 40)) {
-                recieved_target = true;
-            }
+            startMission = UAV_CheckMissionStatus();
             usleep(500000); //check and update 2 times a second
         }
 

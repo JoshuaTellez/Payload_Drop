@@ -39,6 +39,7 @@ void UAV_DatabaseConnect(string dbname,string username,string password)
     	sql << "CREATE TABLE IF NOT EXISTS target_local (id int NOT NULL AUTO_INCREMENT PRIMARY KEY, altitude double NOT NULL, latitude double NOT NULL, longitude double NOT NULL)";
     	sql << "CREATE TABLE IF NOT EXISTS target_alt (id int NOT NULL AUTO_INCREMENT PRIMARY KEY, altitude double NOT NULL, latitude double NOT NULL, longitude double NOT NULL)";
     	sql << "CREATE TABLE IF NOT EXISTS pixeltarget (id int NOT NULL PRIMARY KEY, x INT NOT NULL, y INT NOT NULL)";
+    	sql << "CREATE TABLE IF NOT EXISTS missionstatus (id int NOT NULL PRIMARY KEY, status BOOL NOT NULL)";
     	sql << "SET GLOBAL max_allowed_packet=1073741824;";
     	sql << "SET GLOBAL net_read_timeout = 200 ;";
     	sql << "SET GLOBAL connect_timeout = 200 ;";
@@ -206,7 +207,7 @@ void UAV_PullLatestHEADING_LOCAL(double a[3])
 	double tempyaw = 0;
 	double temppit = 0;
 	double temprol = 0;
-	sql << "SELECT altitude,latitude,longitude FROM heading_local WHERE id = (select max(id) from heading_local);", into(tempyaw),into(temppit),into(temprol);
+	sql << "SELECT yaw,pitch,roll FROM heading_local WHERE id = (select max(id) from heading_local);", into(tempyaw),into(temppit),into(temprol);
 	a[0] = tempyaw;
 	a[1] = temppit;
 	a[2] = temprol;
@@ -216,7 +217,7 @@ void UAV_PullLatestHEADING_ALT(double a[3])
 	double tempyaw = 0;
 	double temppit = 0;
 	double temprol = 0;
-	sql << "SELECT altitude,latitude,longitude FROM heading_alt WHERE id = (select max(id) from heading_alt);", into(tempyaw),into(temppit),into(temprol);
+	sql << "SELECT yaw,pitch,roll FROM heading_alt WHERE id = (select max(id) from heading_alt);", into(tempyaw),into(temppit),into(temprol);
 	a[0] = tempyaw;
 	a[1] = temppit;
 	a[2] = temprol;
@@ -269,10 +270,6 @@ void UAV_DropTARGET_LOCAL()
 {
 	sql << "DROP TABLE IF EXISTS waypoint_local";
 }
-void UAV_DropTARGET_ALT()
-{
-	sql << "DROP TABLE IF EXISTS waypoint_alt";
-}
 void UAV_Query(string query)
 {
 	sql << query;
@@ -291,5 +288,19 @@ void UAV_PullPixelTARGET(int xy[2])
 {
 	sql << "SELECT x,y FROM pixeltarget where id = 1;", into(xy[0]),into(xy[1]);
 }
-
+void UAV_SetMissionStatus(int status)
+{
+	sql << "CREATE TABLE IF NOT EXISTS missionstatus (id int NOT NULL PRIMARY KEY, status INT NOT NULL)";
+	statement sqlstatusinfo = (sql.prepare << "REPLACE INTO missionstatus (id,status) VALUES (1,:i)", use(status));
+	sqlstatusinfo.execute(true);
+}
+int UAV_CheckMissionStatus()
+{
+	int status = 0;
+	sql << "SELECT status FROM missionstatus WHERE id = 1", into(status);
+	if(status == 1)
+		return 1;
+	else
+		return 0;
+}
 
